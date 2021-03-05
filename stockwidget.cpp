@@ -3,6 +3,10 @@
 #include <QNetworkReply>
 #include <QVBoxLayout>
 #include <QFontDatabase>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include "ui_stockwidget.h"
+
 
 struct StockInfo {
     QString close;
@@ -11,6 +15,7 @@ struct StockInfo {
     QString date;
     QString time;
     QString rate;
+    QString bar;
 
     bool parse(const QString & str) {
         auto arr = str.split(",");
@@ -36,7 +41,7 @@ struct StockInfo {
     QString str() {
         const static QString sep = " ";
         QString str;
-        str += time + sep;
+        str += time + bar + sep;
         str += fmt(close) + sep;
         str += fmt(open) + sep;
         str += fmt(curr) + sep;
@@ -47,6 +52,7 @@ struct StockInfo {
 
 StockWidget::StockWidget(const Config & config)
 {
+    initSystemtray();
     auto & stocks = config.stocks_;
     qDebug() << stocks;
     this->setGeometry(config.pos_.x(), config.pos_.y(), 240, 16 * stocks.size());
@@ -92,6 +98,26 @@ StockWidget::StockWidget(const Config & config)
     this->startTimer(1000);
 }
 
+void StockWidget::initSystemtray()
+{
+    QSystemTrayIcon *tray = new QSystemTrayIcon(this);
+
+    QIcon icon("/Users/oooh/icon.png");
+    tray->setIcon(icon);
+    tray->setVisible(true);
+
+    QMenu *menu = new QMenu(this);
+    tray->setContextMenu(menu);
+    QAction *a1 = new QAction("Quit", this);
+    menu->addAction(a1);
+    connect(a1, SIGNAL(triggered()), this, SLOT(close()));
+    //
+    //QAction *a2 = new QAction("tray menu item 2", this);
+    //stiMenu->addAction(a2);
+    //connect(a2, SIGNAL(triggered()), this, SLOT(action2Fired()));
+    tray->show();
+}
+
 void StockWidget::timerEvent(QTimerEvent *event)
 {
     for(auto & i : items_) {
@@ -115,7 +141,9 @@ void StockWidget::update(StockItem * item)
 
 void StockWidget::onUpdate(StockItem * item, QNetworkReply * reply)
 {
+    ++item->count_;
     StockInfo info;
+    info.bar = R"(-/|\)"[item->count_%4];
     info.parse(reply->readAll());
     qDebug() << info.str();
     auto label = item->label_;
