@@ -5,9 +5,9 @@
 	<key>LSUIElement</key>
 	<string>1</string>
 	<key>CFBundleExecutable</key>
-	<string>stock</string>
+	<string>@EXECUTABLE@</string>
 	<key>CFBundleIconFile</key>
-	<string></string>
+	<string>stock.ico</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.yourcompany.stock</string>
 	<key>CFBundlePackageType</key>

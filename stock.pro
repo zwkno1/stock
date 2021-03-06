@@ -25,3 +25,6 @@ DISTFILES +=
 
 RESOURCES += \
     resource.qrc
+
+QMAKE_INFO_PLIST = Info.plist
+ICON = stock.ico
