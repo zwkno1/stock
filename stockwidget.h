@@ -8,13 +8,16 @@
 
 #include "config.h"
 
-class StockWidget : public QMainWindow
+class StockWidget : public QWidget
 {
 public:
     StockWidget(const Config & config);
 
 private:
     void timerEvent(QTimerEvent * event) override;
+
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
     struct StockItem {
         QString code_;
@@ -30,6 +33,10 @@ private:
 
     std::vector<StockItem *> items_;
     void initSystemtray();
+
+    QPoint d_;
+
+    bool locked_ = true;
 };
 
 #endif // STOCKWIDGET_H

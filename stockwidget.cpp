@@ -5,7 +5,7 @@
 #include <QFontDatabase>
 #include <QSystemTrayIcon>
 #include <QMenu>
-#include "ui_stockwidget.h"
+#include <QMouseEvent>
 
 
 struct StockInfo {
@@ -52,13 +52,14 @@ struct StockInfo {
 
 StockWidget::StockWidget(const Config & config)
 {
-    initSystemtray();
     auto & stocks = config.stocks_;
     qDebug() << stocks;
+
+    initSystemtray();
     this->setGeometry(config.pos_.x(), config.pos_.y(), 240, 16 * stocks.size());
-    //this->setFixedSize();
+    //this->setFixedSize(this->size());
     this->setWindowOpacity(1);
-    this->setWindowFlags(Qt::FramelessWindowHint |  Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint
+    this->setWindowFlags(Qt::FramelessWindowHint |  Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint
 #ifdef Q_OS_MAC
                          | Qt::WindowSystemMenuHint
 #else
@@ -102,19 +103,36 @@ void StockWidget::initSystemtray()
 {
     QSystemTrayIcon *tray = new QSystemTrayIcon(this);
 
-    QIcon icon("/Users/oooh/icon.png");
+    QIcon icon(":/icon.png");
     tray->setIcon(icon);
     tray->setVisible(true);
 
     QMenu *menu = new QMenu(this);
     tray->setContextMenu(menu);
-    QAction *a1 = new QAction("Quit", this);
-    menu->addAction(a1);
-    connect(a1, SIGNAL(triggered()), this, SLOT(close()));
-    //
-    //QAction *a2 = new QAction("tray menu item 2", this);
-    //stiMenu->addAction(a2);
-    //connect(a2, SIGNAL(triggered()), this, SLOT(action2Fired()));
+
+    QAction *unlock = new QAction("Unlock", this);
+    unlock->setCheckable(true);
+    menu->addAction(unlock);
+    connect(unlock, &QAction::toggled, [this](bool v){
+        qDebug() << "unlock: " << v;
+        locked_ = !v;
+    });
+
+    QAction * visible = new QAction("Hide", this);
+    visible->setCheckable(true);
+    menu->addAction(visible);
+    connect(visible, &QAction::toggled, [this](bool v) {
+        if(v) {
+            this->hide();
+        }else{
+            this->show();
+        }
+    });
+
+    QAction *quit = new QAction("Quit", this);
+    menu->addAction(quit);
+    connect(quit, SIGNAL(triggered()), this, SLOT(close()));
+
     tray->show();
 }
 
@@ -143,11 +161,25 @@ void StockWidget::onUpdate(StockItem * item, QNetworkReply * reply)
 {
     ++item->count_;
     StockInfo info;
-    info.bar = R"(-/|\)"[item->count_%4];
+    info.bar = R"(-\|/)"[item->count_%4];
     info.parse(reply->readAll());
-    qDebug() << info.str();
     auto label = item->label_;
     label->setText(item->code_ + " " + info.str());
-    qDebug() << label->size();
+    qDebug() << info.str() << ", size: " << label->size();
     item->ok_ = true;
 }
+
+void StockWidget::mousePressEvent(QMouseEvent *event)
+{
+    d_ = event->globalPos() -  this->pos();
+}
+
+void StockWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    if(locked_)
+    {
+        return;
+    }
+    this->move(event->globalPos() - d_);
+}
+
